@@ -6,25 +6,9 @@ on:
       - 'v*'
 
 jobs:
-    
-  create-release:
-    permissions: write-all
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
   build-release:
-    needs: create-release
-    name: Build - ${{ matrix.platform.target }}
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -56,25 +40,14 @@ jobs:
           tar czf xt-${{ matrix.platform.target }}.tar.gz xt
           shasum -a 256 xt-${{ matrix.platform.target }}.tar.gz > xt-${{ matrix.platform.target }}.tar.gz.sha256
 
-      - name: Upload Release Binary
-        uses: actions/upload-release-asset@v1
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: xt/target/${{ matrix.platform.target }}/release/xt-${{ matrix.platform.target }}.tar.gz
-          asset_name: xt-${{ matrix.platform.target }}.tar.gz
-          asset_content_type: application/gzip
-
-      - name: Upload Checksum
-        uses: actions/upload-release-asset@v1
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: xt/target/${{ matrix.platform.target }}/release/xt-${{ matrix.platform.target }}.tar.gz.sha256
-          asset_name: xt-${{ matrix.platform.target }}.tar.gz.sha256
-          asset_content_type: text/plain
+          token: ${{ secrets.GH_TOKEN }}
+          name: Release ${{ github.ref_name }}
+          files: |
+            xt/target/${{ matrix.platform.target }}/release/xt-${{ matrix.platform.target }}.tar.gz
+            xt/target/${{ matrix.platform.target }}/release/xt-${{ matrix.platform.target }}.tar.gz.sha256
 
   docker-release:
     needs: build-release
