@@ -1,8 +1,15 @@
-ARG ARCH
-FROM --platform=$TARGETPLATFORM rust:slim-bullseye as runtime
+ARG TARGETARCH
+FROM rust:slim-bullseye AS runtime
 
 WORKDIR /app
-COPY target/${ARCH}/release/xt /app/xt
+
+# Define the target architecture
+ARG TARGETARCH
+ARG RUST_ARCH
+ENV RUST_ARCH=${TARGETARCH}
+
+# Copy the appropriate binary based on architecture
+COPY target/$RUST_ARCH-unknown-linux-gnu/release/xt /app/xt
 
 # Create a non-root user to run the application
 RUN useradd -m -u 1000 -U app && \
