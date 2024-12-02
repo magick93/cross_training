@@ -57,3 +57,4 @@ jobs:
           executable-name: xt
           target: ${{ matrix.platform.target }}
           working-directory: xt
+          changes-file: ''
