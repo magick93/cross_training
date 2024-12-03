@@ -1,61 +1,49 @@
-name: Release
-
+name: test rust release action
 on:
   push:
     tags:
-      - 'v*'
-
+      - "v*"
 jobs:
-  build-release:
-    permissions:
-      contents: write
-    name: Release - ${{ matrix.platform.os-name }}
-    runs-on: ${{ matrix.platform.runs-on }}
+  basic_test:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        platform:
-          - os-name: FreeBSD-x86_64
-            runs-on: ubuntu-20.04
-            target: x86_64-unknown-freebsd
-            skip_tests: true
-
-          - os-name: Linux-x86_64
-            runs-on: ubuntu-20.04
-            target: x86_64-unknown-linux-musl
-
-          - os-name: Linux-aarch64
-            runs-on: ubuntu-20.04
-            target: aarch64-unknown-linux-musl
-
-          - os-name: Linux-riscv64
-            runs-on: ubuntu-20.04
-            target: riscv64gc-unknown-linux-gnu
-
-          - os-name: Windows-x86_64
-            runs-on: windows-latest
-            target: x86_64-pc-windows-msvc
-
-          - os-name: macOS-x86_64
-            runs-on: macos-latest
-            target: x86_64-apple-darwin
-
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Build binary
-        uses: houseabsolute/actions-rust-cross@v0.0.17
+      - uses: actions/checkout@v4
+      - name: test build rust project
+        uses: lxl66566/rust-simple-release@main
         with:
-          command: build
-          target: ${{ matrix.platform.target }}
-          args: " --release"
-          working-directory: xt
-          strip: true
+          # Targets to compile, seperated by comma (allow space)
+          # Support Linux, Windows and Darwin
+          targets: aarch64-unknown-linux-gnu, aarch64-unknown-linux-musl, x86_64-pc-windows-msvc, x86_64-unknown-linux-musl, x86_64-unknown-linux-gnu, aarch64-apple-darwin, x86_64-apple-darwin
 
-      - name: Publish artifacts and release
-        uses: houseabsolute/actions-rust-release@v0.0.3
-        with:
-          executable-name: xt
-          target: ${{ matrix.platform.target }}
-          archive-name: xt-${{ matrix.platform.os-name }}-${{ github.sha }}
-          working-directory: xt
-          changes-file: ''
+          # Choose one package to build. If not set, it will build first package in workspace.
+          package: openssl-test
+
+          # whether to build lib in the package. If the package has both lib and bin targets, you need to set this option to build lib, otherwise the lib will be ignored, only build bins.
+          # If the package has lib target and no bin targets, it will build lib by default.
+          # If the package has no lib target, set this option to true will cause an error.
+          lib: true
+
+          # Choose bins to build, seperated by comma. If not set, it will build all bins in the package.
+          # This `bins` option should be a subset of target bins in `Cargo.toml`.
+          bins: my-action-test, my-action-test2
+
+          # Features to enable, seperated by comma (allow space)
+          features: test1, test2
+
+          # Files or folders to pack into release assets, relative path seperated by comma.
+          # The files and folers will be added to the root path of archive.
+          # Build outputs (bins and lib) will automatically added to the archive, you don't need to add them twice.
+          files_to_pack: README.md, LICENSE, assets
+
+          # release create options, see https://cli.github.com/manual/gh_release_create
+          release_options: --draft --title 123
+
+          # GITHUB TOKEN, **REQUIRED**
+          token: ${{ secrets.GH_TOKEN }}
+
+        env:
+          # debug level, print more logs
+          debug: 1
