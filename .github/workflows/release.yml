@@ -1,54 +1,52 @@
-name: test rust release action
+name: Release
+
+permissions:
+  contents: write
+
 on:
   push:
     tags:
       - "v*"
 
-defaults:
-  run:
-    working-directory: ./xt      
-
 jobs:
-  basic_test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+  create-release:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: test build rust project
-        uses: lxl66566/rust-simple-release@main
+      - uses: taiki-e/create-gh-release-action@v1
         with:
-          # Targets to compile, seperated by comma (allow space)
-          # Support Linux, Windows and Darwin
-          targets: aarch64-unknown-linux-gnu, aarch64-unknown-linux-musl, x86_64-pc-windows-msvc, x86_64-unknown-linux-musl, x86_64-unknown-linux-gnu, aarch64-apple-darwin, x86_64-apple-darwin
+          # (optional) Path to changelog.
+          changelog: CHANGELOG.md
+          # (required) GitHub token for creating GitHub Releases.
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-          # Choose one package to build. If not set, it will build first package in workspace.
-          package: openssl-test
-
-          # whether to build lib in the package. If the package has both lib and bin targets, you need to set this option to build lib, otherwise the lib will be ignored, only build bins.
-          # If the package has lib target and no bin targets, it will build lib by default.
-          # If the package has no lib target, set this option to true will cause an error.
-          lib: true
-
-          # Choose bins to build, seperated by comma. If not set, it will build all bins in the package.
-          # This `bins` option should be a subset of target bins in `Cargo.toml`.
-          # bins: my-action-test, my-action-test2
-
-          # Features to enable, seperated by comma (allow space)
-          # features: test1, test2
-
-          # Files or folders to pack into release assets, relative path seperated by comma.
-          # The files and folers will be added to the root path of archive.
-          # Build outputs (bins and lib) will automatically added to the archive, you don't need to add them twice.
-          files_to_pack: README.md, LICENSE, assets
-
-          # release create options, see https://cli.github.com/manual/gh_release_create
-          release_options: --draft 
-
-          # GITHUB TOKEN, **REQUIRED**
+  upload-assets:
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cross-compilation tools
+        uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+        if: startsWith(matrix.os, 'ubuntu')
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
+          # Note that glob pattern is not supported yet.
+          bin: ...
+          # (optional) Target triple, default is host triple.
+          target: ${{ matrix.target }}
+          # (required) GitHub token for uploading assets to GitHub Releases.
           token: ${{ secrets.GH_TOKEN }}
-
-        env:
-          # debug level, print more logs
-          debug: 1
