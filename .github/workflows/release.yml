@@ -56,5 +56,6 @@ jobs:
         with:
           executable-name: xt
           target: ${{ matrix.platform.target }}
+          archive-name: xt-${{ matrix.platform.os-name }}-${{ github.sha }}
           working-directory: xt
           changes-file: ''
