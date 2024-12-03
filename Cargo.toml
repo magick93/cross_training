@@ -1,2 +1,5 @@
 [workspace]
 members = ["xt"]
+
+[workspace.package]
+edition = "2021"
