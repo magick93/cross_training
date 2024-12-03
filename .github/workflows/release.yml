@@ -33,10 +33,10 @@ jobs:
 
           # Choose bins to build, seperated by comma. If not set, it will build all bins in the package.
           # This `bins` option should be a subset of target bins in `Cargo.toml`.
-          bins: my-action-test, my-action-test2
+          # bins: my-action-test, my-action-test2
 
           # Features to enable, seperated by comma (allow space)
-          features: test1, test2
+          # features: test1, test2
 
           # Files or folders to pack into release assets, relative path seperated by comma.
           # The files and folers will be added to the root path of archive.
@@ -44,7 +44,7 @@ jobs:
           files_to_pack: README.md, LICENSE, assets
 
           # release create options, see https://cli.github.com/manual/gh_release_create
-          release_options: --draft --title 123
+          release_options: --draft 
 
           # GITHUB TOKEN, **REQUIRED**
           token: ${{ secrets.GH_TOKEN }}
